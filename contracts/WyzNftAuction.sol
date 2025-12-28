@@ -4,6 +4,7 @@ pragma solidity ^0.8;
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
@@ -11,7 +12,7 @@ import "hardhat/console.sol";
 
 import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
 
-contract WyzNftAuction is Initializable, UUPSUpgradeable {
+contract WyzNftAuction is Initializable, UUPSUpgradeable, ReentrancyGuardUpgradeable {
 
     struct NftAuction {
         // 卖家
@@ -43,8 +44,33 @@ contract WyzNftAuction is Initializable, UUPSUpgradeable {
 
     address public admin;
 
+    event AuctionCreated(
+        uint256 indexed auctionId, 
+        address indexed nftAddress,
+        uint256 indexed tokenId,   
+        address seller,           
+        uint256 startPrice,        
+        uint256 durationSeconds,  
+        uint256 beginTime        
+    );
+
+    // 事件：当有新的最高出价时触发
+    event NewHighestBid(
+        uint256 indexed auctionId, 
+        address indexed bidder,
+        uint256 amount
+    );
+
+    // 事件：当拍卖结束时触发
+    event AuctionEnded(
+        uint256 indexed auctionId,
+        address indexed winner,
+        uint256 finalPrice
+    );
+
     function initialize() public initializer {
         admin = msg.sender;
+        __ReentrancyGuard_init();
     }
 
     function createNftAuction(
@@ -72,6 +98,7 @@ contract WyzNftAuction is Initializable, UUPSUpgradeable {
             nftTokenAddress: address(0)
         });
 
+        emit AuctionCreated(nextAuctionId, nftContractAddress, nftTokenId, msg.sender, beginPrice, durationSeconds, block.timestamp);
         nextAuctionId++;
     }
 
@@ -110,12 +137,16 @@ contract WyzNftAuction is Initializable, UUPSUpgradeable {
         auction.highestBidder = msg.sender;
         auction.highestPrice = amount;
         auction.nftTokenAddress = nftTokenAddress;
+        
+        emit NewHighestBid(auctionId, msg.sender, amount);
     }
 
-    function endAuction(uint256 auctionId) external {
+    function endAuction(uint256 auctionId) external nonReentrant {
         NftAuction storage auction = nftAuctions[auctionId];
-        require(!auction.ended && auction.beginTime + auction.durationSeconds > block.timestamp, "Auction has ended");
+        require(!auction.ended, "Auction has ended");
+        require(auction.beginTime + auction.durationSeconds <= block.timestamp, "Auction not ended yet");
 
+        auction.ended = true; 
         if (auction.highestPrice > 0) {
             // NFT 转移给出价最高者
             IERC721(auction.nftContractAddress).safeTransferFrom(address(this), auction.highestBidder, auction.nftTokenId);
@@ -124,17 +155,18 @@ contract WyzNftAuction is Initializable, UUPSUpgradeable {
                 (bool success, ) = payable(auction.seller).call{value: auction.highestPrice}("");
                 require(success, "Transfer money to seller failed!");
             } else {
-                IERC20(auction.nftTokenAddress).transfer(auction.seller, auction.highestPrice);
+                bool success = IERC20(auction.nftTokenAddress).transfer(auction.seller, auction.highestPrice);
+                require(success, "Transfer nft to seller failed!");
             }
         } else {
             // 无人出价
             IERC721(auction.nftContractAddress).safeTransferFrom(address(this),  auction.seller, auction.nftTokenId);
         }
-
-        auction.ended = true;   
+        emit AuctionEnded(auctionId, auction.highestBidder, auction.highestPrice);
     }
 
     function setPriceFeed(address nftTokenAddress, address priceFeed) public {
+        require(msg.sender == admin, "Only admin can set price feeds");
         priceFeeds[nftTokenAddress] = AggregatorV3Interface(priceFeed);
     }
 

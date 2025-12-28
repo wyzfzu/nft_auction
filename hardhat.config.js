@@ -17,6 +17,11 @@ module.exports = {
     hardhat: {
       chainId: 31337,
     },
+    localhost: {
+      url: "http://127.0.0.1:8545",
+      chainId: 31337, // 与 hardhat 网络相同
+      // accounts: 由本地节点提供，通常无需配置
+    },
     sepolia: {
       url: process.env.SEPOLIA_RPC_URL,
       accounts: [process.env.PRIVATE_KEY], // 使用环境变量

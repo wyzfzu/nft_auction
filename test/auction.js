@@ -96,7 +96,7 @@ async function testEth(tokenId, nftAuction, auctionId, signer, buyer, myERC20Add
     await tx.wait();
 
     // 模拟等待拍卖
-    await new Promise(resolve => setTimeout(resolve, 5 * 1000));
+    await new Promise(resolve => setTimeout(resolve, 10 * 1000));
 
     await nftAuction.connect(signer).endAuction(auctionId);
     console.log("拍卖结束");
@@ -129,7 +129,7 @@ async function testERC20(tokenId, nftAuction, auctionId, signer, buyer, myERC20A
     await tx.wait();
 
     // 模拟等待拍卖
-    await new Promise(resolve => setTimeout(resolve, 5 * 1000));
+    await new Promise(resolve => setTimeout(resolve, 10 * 1000));
 
     await nftAuction.connect(signer).endAuction(auctionId);
     console.log("[", auctionId, "]拍卖结束");
@@ -153,7 +153,7 @@ async function testNoBid(tokenId, nftAuction, auctionId, signer, myERC721Address
     console.log("创建拍卖成功，并开始拍卖: ", auction);
 
     // 模拟等待拍卖
-    await new Promise(resolve => setTimeout(resolve, 5 * 1000));
+    await new Promise(resolve => setTimeout(resolve, 10 * 1000));
 
     await nftAuction.connect(signer).endAuction(auctionId);
     console.log("拍卖结束");
