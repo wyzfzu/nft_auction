@@ -16,7 +16,7 @@
 
 4. 部署
 4.1 首次部署
-`npx hardhat deploy --network sepolia --tags deployWyzNftAuction`
+- `npx hardhat deploy --network sepolia --tags deployWyzNftAuction`
 
 4.1.1 部署日志
 - 部署人地址:  0x64F60E7e1403f3F1F4fd3671d6984e784BaE1415
@@ -55,12 +55,12 @@ Successfully linked proxy to implementation.
 
 - 📊 验证结果摘要:
 ==================
-实现合约: ✅ 成功
-代理合约: ✅ 成功
+- 实现合约: ✅ 成功
+- 代理合约: ✅ 成功
 
 
 4.2 升级合约：
-`npx hardhat deploy --network sepolia --tags upgradeWyzNftAuction`
+- `npx hardhat deploy --network sepolia --tags upgradeWyzNftAuction`
 
 - 部署人地址:  0x64F60E7e1403f3F1F4fd3671d6984e784BaE1415
 - 代理合约地址： 0xe66FB53C84Fae27A75d9c414C53e095Dd7b54215
